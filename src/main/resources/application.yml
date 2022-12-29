@@ -1,0 +1,28 @@
+server:
+  port: 5001
+
+spring:
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ipay}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:root}
+  jpa:
+    database: POSTGRESQL
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate.ddl-auto: update
+    generate-ddl: true
+    show-sql: false
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+
+api:
+  basepath: /api/v1/core-banking
+
+
+flw-secret-key: ${FLW_SECRET_KEY:FLWSECK_TEST-a09998bc3cf10547962ebe85b824685c-X}
+pstk-secret-key: ${PSTK_SECRET_KEY:sk_test_f0536247d820e72d89510a34885e932559c610aa}
