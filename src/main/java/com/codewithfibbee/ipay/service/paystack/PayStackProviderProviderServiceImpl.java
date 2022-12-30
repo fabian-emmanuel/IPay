@@ -10,7 +10,7 @@ import com.codewithfibbee.ipay.payloads.request.PaystackTransferRequest;
 import com.codewithfibbee.ipay.payloads.request.ValidateAccountDto;
 import com.codewithfibbee.ipay.payloads.response.*;
 import com.codewithfibbee.ipay.repository.TransactionHistoryRepository;
-import com.codewithfibbee.ipay.service.IPayService;
+import com.codewithfibbee.ipay.service.IPayProviderService;
 import com.codewithfibbee.ipay.util.BaseUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -32,7 +32,7 @@ import static com.codewithfibbee.ipay.util.BaseUtil.headers;
 @Service("PayStackProvider")
 @Slf4j
 @RequiredArgsConstructor
-public class PayStackProviderServiceImpl implements IPayService {
+public class PayStackProviderProviderServiceImpl implements IPayProviderService {
     private final Gson gson;
     private final WebClientHandler webClientHandler;
     private final TransactionHistoryRepository repository;
@@ -107,7 +107,7 @@ public class PayStackProviderServiceImpl implements IPayService {
     }
 
     @Override
-    public Optional<String> getTransactionStatus(String transactionReference) {
+    public Optional<String> getTransactionStatusValue(String transactionReference) {
         HttpRequest request = HttpRequest.newBuilder()
                 .headers(headers(PSTK_AUTH))
                 .uri(URI.create(String.format("%s%s", PSTK_BASE_URI, PSTK_VERIFY_TRANSACTION_STATUS_URI)
@@ -115,6 +115,11 @@ public class PayStackProviderServiceImpl implements IPayService {
                 .build();
 
         return Optional.ofNullable(webClientHandler.processFieldValue(request, "status"));
+    }
+
+    @Override
+    public void doRetry(String transactionReference) {
+        //Todo: implement retry logic
     }
 
     private TransferResponse mapToTransferResponse(PayStackTransferResponse response) {

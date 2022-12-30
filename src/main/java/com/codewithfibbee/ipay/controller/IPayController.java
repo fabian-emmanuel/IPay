@@ -6,7 +6,7 @@ import com.codewithfibbee.ipay.payloads.request.ValidateAccountDto;
 import com.codewithfibbee.ipay.payloads.response.ListBanksResponse;
 import com.codewithfibbee.ipay.payloads.response.TransferResponse;
 import com.codewithfibbee.ipay.payloads.response.ValidateAccountResponse;
-import com.codewithfibbee.ipay.service.IPayService;
+import com.codewithfibbee.ipay.service.IPayProviderService;
 import com.codewithfibbee.ipay.service.IPayTransactionStatusService;
 import com.codewithfibbee.ipay.util.ApiResponseUtil;
 import jakarta.validation.Valid;
@@ -28,7 +28,7 @@ import static com.codewithfibbee.ipay.util.BaseUtil.validateProvider;
 @Slf4j
 public class IPayController {
     IPayTransactionStatusService iPayTransactionStatusService;
-    Map<String, IPayService> iPayServiceMap;
+    Map<String, IPayProviderService> iPayServiceMap;
 
     @GetMapping("/banks")
     public ResponseEntity<ApiResponse<List<ListBanksResponse>>> fetchBanks(@RequestParam(required = false, defaultValue = "PayStack") String provider){
@@ -51,5 +51,11 @@ public class IPayController {
     @GetMapping("/transaction/{reference}")
     public ResponseEntity<ApiResponse<TransferResponse>> transactionStatus(@PathVariable String reference) {
         return ApiResponseUtil.response(HttpStatus.OK, iPayTransactionStatusService.getTransactionStatus(reference), "Transaction Status Retrieved Successfully");
+    }
+
+    @PostMapping("/retry/{reference}")
+    public ResponseEntity<ApiResponse<Object>> retryTransaction(@PathVariable String reference) {
+        iPayTransactionStatusService.doRetry(reference);
+        return ApiResponseUtil.response(HttpStatus.OK, "", "Retry Attempted");
     }
 }

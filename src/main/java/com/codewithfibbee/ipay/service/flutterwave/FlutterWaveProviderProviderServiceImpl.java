@@ -12,7 +12,7 @@ import com.codewithfibbee.ipay.payloads.response.ListBanksResponse;
 import com.codewithfibbee.ipay.payloads.response.TransferResponse;
 import com.codewithfibbee.ipay.payloads.response.ValidateAccountResponse;
 import com.codewithfibbee.ipay.repository.TransactionHistoryRepository;
-import com.codewithfibbee.ipay.service.IPayService;
+import com.codewithfibbee.ipay.service.IPayProviderService;
 import com.codewithfibbee.ipay.util.BaseUtil;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +24,8 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.codewithfibbee.ipay.constants.ApiConstants.*;
 import static com.codewithfibbee.ipay.util.BaseUtil.convertToJsonBody;
@@ -32,12 +34,15 @@ import static com.codewithfibbee.ipay.util.BaseUtil.headers;
 @Service("FlutterWaveProvider")
 @Slf4j
 @RequiredArgsConstructor
-public class FlutterWaveProviderServiceImpl implements IPayService {
+public class FlutterWaveProviderProviderServiceImpl implements IPayProviderService {
     private final WebClientHandler webClientHandler;
     private final TransactionHistoryRepository repository;
     private final Gson gson;
     @Value("${flw-secret-key}")
     private String FLW_AUTH;
+    private static final int MAX_RETRY_ATTEMPT = 3; // Maximum number of retry attempts
+    private static final int INITIAL_DELAY = 100; // Initial delay in milliseconds
+    private static final int MULTIPLIER = 2; // Back-off multiplier
 
     @Override
     public List<ListBanksResponse> fetchBanks() {
@@ -94,7 +99,7 @@ public class FlutterWaveProviderServiceImpl implements IPayService {
     }
 
     @Override
-    public Optional<String> getTransactionStatus(String transactionReference) {
+    public Optional<String> getTransactionStatusValue(String transactionReference) {
         HttpRequest request = HttpRequest.newBuilder()
                 .headers(headers(FLW_AUTH))
                 .uri(URI.create(String.format("%s%s", FLW_BASE_URI, FLW_VERIFY_TRANSACTION_STATUS_URI)
@@ -103,6 +108,59 @@ public class FlutterWaveProviderServiceImpl implements IPayService {
                 .build();
 
         return Optional.ofNullable(webClientHandler.processFieldValue(request, "status"));
+    }
+
+
+    @Override
+    public void doRetry(String transactionReference) {
+        int retryAttempt = 0; // Current retry attempt
+        int delay = INITIAL_DELAY; // Current delay
+        AtomicReference<String> m= new AtomicReference<>("");
+
+        while (retryAttempt < MAX_RETRY_ATTEMPT) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .headers(headers(FLW_AUTH))
+                        .uri(URI.create(String.format("%s%s", FLW_BASE_URI, FLW_TRANSFER_URI)
+                                .concat(String.format("/%s/retries", transactionReference))))
+                        .POST(HttpRequest.BodyPublishers.ofString(""))
+                        .build();
+
+                var status = Optional.ofNullable(webClientHandler.processFieldValue(request, "status"));
+                status.ifPresent(s -> {
+                    if (s.equals("success")) {
+                        log.info("Transaction retry successful");
+                    } else {
+                        m.set(s);
+                        log.info("Message : {} ", s);
+                        log.info("Transaction retry failed");
+                    }
+                });
+                break;
+//                if (status.isPresent() && status.get().equals("success")) {
+//                    break;
+//                }
+//                if (status.equals("success")) {
+//                    break;
+//                }
+
+            } catch (Exception e) {
+                retryAttempt++; // Increment the retry attempt
+                log.info("attempt: {}", retryAttempt);
+                if (retryAttempt == MAX_RETRY_ATTEMPT) {
+                    throw new InvalidRequestException(m.get());
+                }
+                try {
+                    // Exponential back-off
+                    TimeUnit.MILLISECONDS.sleep(delay);
+                    delay *= MULTIPLIER;
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    // Handle the interrupt exception
+                }
+            }
+        }
+
     }
 
     private FlwTransferRequest buildFlwTransferRequest(BankTransferDto dto) {

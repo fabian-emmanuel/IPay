@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static com.codewithfibbee.ipay.util.BaseUtil.getMapper;
 
@@ -85,13 +86,12 @@ public class WebClientHandler {
     public String processFieldValue(HttpRequest request, String field){
         return getBaseResponseCompletableFuture(request)
                 .thenApply(responseBody -> {
-                    log.info("Response body: {}", responseBody);
                     if (responseBody.getData() != null) {
                         JsonObject data = gson.toJsonTree(responseBody.getData()).getAsJsonObject();
                         log.info("JsonObject data: {}", data);
                         return data.get(field).getAsString();
                     } else {
-                        return null;
+                        return responseBody.getMessage();
                     }
                 }).join();
 

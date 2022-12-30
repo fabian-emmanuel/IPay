@@ -18,7 +18,7 @@ import static com.codewithfibbee.ipay.util.BaseUtil.validateProvider;
 @RequiredArgsConstructor
 public class IPayTransactionStatusServiceImpl implements IPayTransactionStatusService {
     private final TransactionHistoryRepository repository;
-    private final Map<String, IPayService> iPayServiceMap;
+    private final Map<String, IPayProviderService> iPayServiceMap;
 
     @Override
     @Transactional
@@ -27,9 +27,17 @@ public class IPayTransactionStatusServiceImpl implements IPayTransactionStatusSe
                  .orElseThrow(() -> new ResourceNotFoundException("Transaction reference not found"));
          log.info("Transaction status: {}", res);
          String provider = validateProvider(res.getProvider());
-         var newStatus = iPayServiceMap.get(provider).getTransactionStatus(res.getTransactionReference());
+         var newStatus = iPayServiceMap.get(provider).getTransactionStatusValue(res.getTransactionReference());
          newStatus.ifPresent(res::setStatus);
          return mapToTransferResponse(res);
+    }
+
+    @Override
+    public void doRetry(String reference) {
+        var res =  repository.findByTransactionReference(reference)
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction reference not found"));
+        String provider = validateProvider(res.getProvider());
+        iPayServiceMap.get(provider).doRetry(res.getTransactionReference());
     }
 
     private TransferResponse mapToTransferResponse(TransactionHistory history) {

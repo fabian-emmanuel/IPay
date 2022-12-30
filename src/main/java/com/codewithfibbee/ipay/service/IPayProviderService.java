@@ -9,9 +9,10 @@ import com.codewithfibbee.ipay.payloads.response.ValidateAccountResponse;
 import java.util.List;
 import java.util.Optional;
 
-public interface IPayService {
+public interface IPayProviderService {
     List<ListBanksResponse> fetchBanks();
     ValidateAccountResponse validateBankAccount(ValidateAccountDto validateAccountDto);
     TransferResponse transferFunds(BankTransferDto bankTransferDto);
-    Optional<String> getTransactionStatus(String transactionReference);
+    Optional<String> getTransactionStatusValue(String transactionReference);
+    void doRetry(String transactionReference);
 }
