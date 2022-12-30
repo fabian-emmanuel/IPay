@@ -1,6 +1,7 @@
 package com.codewithfibbee.ipay.controller;
 
 import com.codewithfibbee.ipay.apiresponse.ApiResponse;
+import com.codewithfibbee.ipay.config.CacheManager;
 import com.codewithfibbee.ipay.payloads.request.BankTransferDto;
 import com.codewithfibbee.ipay.payloads.request.ValidateAccountDto;
 import com.codewithfibbee.ipay.payloads.response.ListBanksResponse;
@@ -12,6 +13,7 @@ import com.codewithfibbee.ipay.util.ApiResponseUtil;
 import jakarta.validation.Valid;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,17 +31,21 @@ import static com.codewithfibbee.ipay.util.BaseUtil.validateProvider;
 public class IPayController {
     IPayTransactionStatusService iPayTransactionStatusService;
     Map<String, IPayProviderService> iPayServiceMap;
+    CacheManager cacheManager;
 
     @GetMapping("/banks")
-    public ResponseEntity<ApiResponse<List<ListBanksResponse>>> fetchBanks(@RequestParam(required = false, defaultValue = "PayStack") String provider){
+    public ResponseEntity<ApiResponse<List<ListBanksResponse>>> fetchBanks(@RequestParam(required = false, defaultValue = "PayStack") String provider) {
         provider = validateProvider(provider);
-        return ApiResponseUtil.response(HttpStatus.OK, iPayServiceMap.get(provider).fetchBanks(), "Banks Retrieved Successfully");
+        List<ListBanksResponse> banks = cacheManager.getProviderBanks(provider);
+        List<ListBanksResponse> response = banks.isEmpty() ? banks : iPayServiceMap.get(provider).fetchBanks();
+        return ApiResponseUtil.response(HttpStatus.OK, response, "Banks Retrieved Successfully");
     }
 
     @PostMapping("/validate-bank-account")
     public ResponseEntity<ApiResponse<ValidateAccountResponse>> validateBankAccount(@Valid @RequestBody ValidateAccountDto validateAccountDto, @RequestParam(required = false, defaultValue = "PayStack") String provider) {
         provider = validateProvider(provider);
-        return ApiResponseUtil.response(HttpStatus.OK, iPayServiceMap.get(provider).validateBankAccount(validateAccountDto), "Account Validated Successfully");
+        String bankName = cacheManager.getBankName(validateAccountDto.getCode());
+        return ApiResponseUtil.response(HttpStatus.OK, iPayServiceMap.get(provider).validateBankAccount(validateAccountDto, bankName), "Account Validated Successfully");
     }
 
     @PostMapping("/bank-transfer")

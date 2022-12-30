@@ -57,7 +57,7 @@ public class FlutterWaveProviderProviderServiceImpl implements IPayProviderServi
     }
 
     @Override
-    public ValidateAccountResponse validateBankAccount(ValidateAccountDto dto) {
+    public ValidateAccountResponse validateBankAccount(ValidateAccountDto dto, String bankName) {
 
         String jsonBody = convertToJsonBody(dto);
 
@@ -67,10 +67,7 @@ public class FlutterWaveProviderProviderServiceImpl implements IPayProviderServi
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();
 
-        var bank = fetchBanks().stream().filter(b -> b.getCode().equals(dto.getCode()))
-                .findFirst().get();
-
-        return webClientHandler.processValidateAccountResponse(dto, request, bank.getName());
+        return webClientHandler.processValidateAccountResponse(dto, request, bankName);
     }
 
     @Override

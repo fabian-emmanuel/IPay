@@ -53,7 +53,7 @@ public class PayStackProviderProviderServiceImpl implements IPayProviderService 
 
 
     @Override
-    public ValidateAccountResponse validateBankAccount(ValidateAccountDto validateAccountDto) {
+    public ValidateAccountResponse validateBankAccount(ValidateAccountDto validateAccountDto, String bankName) {
 
         HttpRequest request = HttpRequest.newBuilder()
                 .headers(headers(PSTK_AUTH))
@@ -64,10 +64,7 @@ public class PayStackProviderProviderServiceImpl implements IPayProviderService 
                         .concat(validateAccountDto.getCode())))
                 .build();
 
-        var bank = fetchBanks().stream().filter(b -> b.getCode().equals(validateAccountDto.getCode()))
-                .findFirst().get();
-
-        return webClientHandler.processValidateAccountResponse(validateAccountDto, request, bank.getName());
+        return webClientHandler.processValidateAccountResponse(validateAccountDto, request, bankName);
     }
     @Override
     public TransferResponse transferFunds(BankTransferDto bankTransferDto) {
