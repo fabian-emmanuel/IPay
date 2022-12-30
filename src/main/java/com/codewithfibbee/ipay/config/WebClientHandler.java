@@ -73,7 +73,7 @@ public class WebClientHandler {
                 .thenApply(body -> {
                     if (body.getData() != null) {
                         var res = gson.fromJson(gson.toJson(body.getData()), ValidateAccountResponse.class);
-                        res.setBank_code(validateAccountDto.getBankCode());
+                        res.setBank_code(validateAccountDto.getCode());
                         res.setBank_name(bankName);
                         return res;
                     } else {

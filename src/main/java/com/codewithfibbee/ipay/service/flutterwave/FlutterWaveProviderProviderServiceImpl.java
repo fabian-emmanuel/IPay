@@ -67,7 +67,7 @@ public class FlutterWaveProviderProviderServiceImpl implements IPayProviderServi
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();
 
-        var bank = fetchBanks().stream().filter(b -> b.getCode().equals(dto.getBankCode()))
+        var bank = fetchBanks().stream().filter(b -> b.getCode().equals(dto.getCode()))
                 .findFirst().get();
 
         return webClientHandler.processValidateAccountResponse(dto, request, bank.getName());

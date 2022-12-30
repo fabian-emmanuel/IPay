@@ -61,10 +61,10 @@ public class PayStackProviderProviderServiceImpl implements IPayProviderService 
                         .concat("?account_number=")
                         .concat(validateAccountDto.getAccountNumber())
                         .concat("&bank_code=")
-                        .concat(validateAccountDto.getBankCode())))
+                        .concat(validateAccountDto.getCode())))
                 .build();
 
-        var bank = fetchBanks().stream().filter(b -> b.getCode().equals(validateAccountDto.getBankCode()))
+        var bank = fetchBanks().stream().filter(b -> b.getCode().equals(validateAccountDto.getCode()))
                 .findFirst().get();
 
         return webClientHandler.processValidateAccountResponse(validateAccountDto, request, bank.getName());
