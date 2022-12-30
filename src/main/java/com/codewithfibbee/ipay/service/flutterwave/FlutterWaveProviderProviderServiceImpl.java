@@ -17,6 +17,7 @@ import com.codewithfibbee.ipay.util.BaseUtil;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -137,12 +138,6 @@ public class FlutterWaveProviderProviderServiceImpl implements IPayProviderServi
                     }
                 });
                 break;
-//                if (status.isPresent() && status.get().equals("success")) {
-//                    break;
-//                }
-//                if (status.equals("success")) {
-//                    break;
-//                }
 
             } catch (Exception e) {
                 retryAttempt++; // Increment the retry attempt
@@ -170,8 +165,7 @@ public class FlutterWaveProviderProviderServiceImpl implements IPayProviderServi
                 .accountBank(dto.getBeneficiaryBankCode())
                 .currency(dto.getCurrencyCode())
                 .narration(dto.getNarration())
-                .reference(BaseUtil.generateUniqueRef())
-                .debitCurrency(dto.getDebitCurrency())
+                .reference(StringUtils.isBlank(dto.getTransactionReference()) ? BaseUtil.generateUniqueRef() : dto.getTransactionReference())
                 .callbackUrl(dto.getCallBackUrl())
                 .build();
     }

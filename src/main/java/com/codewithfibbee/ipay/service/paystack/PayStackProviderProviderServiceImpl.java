@@ -16,6 +16,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -82,7 +83,7 @@ public class PayStackProviderProviderServiceImpl implements IPayProviderService 
                 .amount(bankTransferDto.getAmount())
                 .recipient(recipientCode)
                 .reason(bankTransferDto.getNarration())
-                .reference(BaseUtil.generateUniqueRef())
+                .reference(StringUtils.isBlank(bankTransferDto.getTransactionReference()) ? BaseUtil.generateUniqueRef() : bankTransferDto.getTransactionReference())
                 .build();
 
         String jsonBody = convertToJsonBody(transferRequest);
