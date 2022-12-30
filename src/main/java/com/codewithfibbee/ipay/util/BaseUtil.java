@@ -41,5 +41,4 @@ public class BaseUtil {
     public static String[] headers(String auth){
         return new String[]{"Authorization", String.format("Bearer %s", auth), "Content-Type", "application/json"};
     }
-
 }

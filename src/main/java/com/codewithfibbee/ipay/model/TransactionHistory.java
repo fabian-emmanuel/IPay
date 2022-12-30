@@ -1,7 +1,5 @@
 package com.codewithfibbee.ipay.model;
 
-import com.codewithfibbee.ipay.enums.Provider;
-import com.codewithfibbee.ipay.enums.Status;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -14,6 +12,8 @@ import java.math.BigDecimal;
 
 
 @Entity
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -35,4 +35,9 @@ public class TransactionHistory {
     String sessionID;
     String status;
     String provider;
+
+    @Override
+    public String toString() {
+        return "TransactionHistory{id=%d, amount=%s, beneficiaryAccountNumber='%s', beneficiaryAccountName='%s', beneficiaryBankCode='%s', transactionReference='%s', transactionDateTime='%s', currencyCode='%s', responseMessage='%s', responseCode='%s', sessionID='%s', status='%s', provider='%s'}".formatted(id, amount, beneficiaryAccountNumber, beneficiaryAccountName, beneficiaryBankCode, transactionReference, transactionDateTime, currencyCode, responseMessage, responseCode, sessionID, status, provider);
+    }
 }

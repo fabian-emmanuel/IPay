@@ -1,10 +1,14 @@
 package com.codewithfibbee.ipay.config;
 
+import com.codewithfibbee.ipay.exceptions.InvalidRequestException;
 import com.codewithfibbee.ipay.exceptions.ProcessingException;
+import com.codewithfibbee.ipay.payloads.request.ValidateAccountDto;
 import com.codewithfibbee.ipay.payloads.response.BaseResponse;
 import com.codewithfibbee.ipay.payloads.response.ListBanksResponse;
+import com.codewithfibbee.ipay.payloads.response.ValidateAccountResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,5 +66,34 @@ public class WebClientHandler {
         } catch (JsonProcessingException e) {
             throw new ProcessingException(e.getMessage(), e);
         }
+    }
+
+    public ValidateAccountResponse processValidateAccountResponse(ValidateAccountDto validateAccountDto, HttpRequest request, String bankName) {
+        return getBaseResponseCompletableFuture(request)
+                .thenApply(body -> {
+                    if (body.getData() != null) {
+                        var res = gson.fromJson(gson.toJson(body.getData()), ValidateAccountResponse.class);
+                        res.setBank_code(validateAccountDto.getBankCode());
+                        res.setBank_name(bankName);
+                        return res;
+                    } else {
+                        throw new InvalidRequestException(body.getMessage());
+                    }
+                }).join();
+    }
+
+    public String processFieldValue(HttpRequest request, String field){
+        return getBaseResponseCompletableFuture(request)
+                .thenApply(responseBody -> {
+                    log.info("Response body: {}", responseBody);
+                    if (responseBody.getData() != null) {
+                        JsonObject data = gson.toJsonTree(responseBody.getData()).getAsJsonObject();
+                        log.info("JsonObject data: {}", data);
+                        return data.get(field).getAsString();
+                    } else {
+                        return null;
+                    }
+                }).join();
+
     }
 }

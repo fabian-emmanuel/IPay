@@ -1,13 +1,16 @@
-package com.codewithfibbee.ipay.service;
+package com.codewithfibbee.ipay.service.paystack;
 
 import com.codewithfibbee.ipay.config.WebClientHandler;
+import com.codewithfibbee.ipay.enums.Provider;
 import com.codewithfibbee.ipay.exceptions.InvalidRequestException;
+import com.codewithfibbee.ipay.model.TransactionHistory;
 import com.codewithfibbee.ipay.payloads.request.BankTransferDto;
 import com.codewithfibbee.ipay.payloads.request.PaystackTransferRecipientRequest;
 import com.codewithfibbee.ipay.payloads.request.PaystackTransferRequest;
 import com.codewithfibbee.ipay.payloads.request.ValidateAccountDto;
-import com.codewithfibbee.ipay.payloads.response.ListBanksResponse;
-import com.codewithfibbee.ipay.payloads.response.TransferResponse;
+import com.codewithfibbee.ipay.payloads.response.*;
+import com.codewithfibbee.ipay.repository.TransactionHistoryRepository;
+import com.codewithfibbee.ipay.service.IPayService;
 import com.codewithfibbee.ipay.util.BaseUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -20,6 +23,7 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.codewithfibbee.ipay.constants.ApiConstants.*;
 import static com.codewithfibbee.ipay.util.BaseUtil.convertToJsonBody;
@@ -31,6 +35,7 @@ import static com.codewithfibbee.ipay.util.BaseUtil.headers;
 public class PayStackProviderServiceImpl implements IPayService {
     private final Gson gson;
     private final WebClientHandler webClientHandler;
+    private final TransactionHistoryRepository repository;
     @Value("${pstk-secret-key}")
     private String PSTK_AUTH;
 
@@ -47,7 +52,7 @@ public class PayStackProviderServiceImpl implements IPayService {
 
 
     @Override
-    public Object validateBankAccount(ValidateAccountDto validateAccountDto) {
+    public ValidateAccountResponse validateBankAccount(ValidateAccountDto validateAccountDto) {
 
         HttpRequest request = HttpRequest.newBuilder()
                 .headers(headers(PSTK_AUTH))
@@ -58,9 +63,11 @@ public class PayStackProviderServiceImpl implements IPayService {
                         .concat(validateAccountDto.getBankCode())))
                 .build();
 
-        return webClientHandler.processResponse(request);
-    }
+        var bank = fetchBanks().stream().filter(b -> b.getCode().equals(validateAccountDto.getBankCode()))
+                .findFirst().get();
 
+        return webClientHandler.processValidateAccountResponse(validateAccountDto, request, bank.getName());
+    }
     @Override
     public TransferResponse transferFunds(BankTransferDto bankTransferDto) {
 
@@ -86,8 +93,42 @@ public class PayStackProviderServiceImpl implements IPayService {
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();
 
-//        return webClientHandler.processResponse(request);
-        return null;
+        PayStackTransferResponse response = webClientHandler.getBaseResponseCompletableFuture(request)
+                .thenApply(responseBody -> {
+                    if (responseBody.getData() != null) {
+                        return gson.fromJson(gson.toJson(responseBody.getData()), PayStackTransferResponse.class);
+                    } else {
+                        throw new InvalidRequestException(responseBody.getMessage());
+                    }
+                }).join();
+
+        repository.save(mapToTransactionHistoryEntity(response));
+        return mapToTransferResponse(response);
+    }
+
+    @Override
+    public Optional<String> getTransactionStatus(String transactionReference) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .headers(headers(PSTK_AUTH))
+                .uri(URI.create(String.format("%s%s", PSTK_BASE_URI, PSTK_VERIFY_TRANSACTION_STATUS_URI)
+                        .concat(transactionReference)))
+                .build();
+
+        return Optional.ofNullable(webClientHandler.processFieldValue(request, "status"));
+    }
+
+    private TransferResponse mapToTransferResponse(PayStackTransferResponse response) {
+        return TransferResponse.builder()
+                .amount(response.getAmount().toString())
+                .beneficiaryAccountNumber(response.getAccount_number())
+                .beneficiaryAccountName(response.getName())
+                .beneficiaryBankCode(response.getBank_code())
+                .transactionReference(response.getReference())
+                .transactionDateTime(response.getTransfer_date())
+                .currencyCode(response.getCurrency())
+                .responseMessage(response.getMessage())
+                .status(response.getStatus())
+                .build();
     }
 
     private String getRecipientCode(Object recipient) {
@@ -120,5 +161,24 @@ public class PayStackProviderServiceImpl implements IPayService {
             }
         }
         return null;
+    }
+
+    private TransactionHistory mapToTransactionHistoryEntity(PayStackTransferResponse response) {
+        return TransactionHistory.builder()
+                .amount(response.getAmount())
+                .beneficiaryAccountNumber(response.getAccount_number())
+                .beneficiaryAccountName(response.getName())
+                .beneficiaryBankCode(response.getBank_code())
+                .transactionReference(response.getReference())
+                .transactionDateTime(response.getTransfer_date())
+                .currencyCode(response.getCurrency())
+                .status(response.getStatus())
+                .responseMessage(response.getStatus().equalsIgnoreCase("success")
+                        ? "Transfer_Successful"
+                        : response.getStatus().equalsIgnoreCase("failure")
+                        ? "Transfer_Not_Successful"
+                        : "Pending")
+                .provider(Provider.PayStack.name())
+                .build();
     }
 }

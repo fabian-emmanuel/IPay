@@ -1,4 +1,4 @@
-package com.codewithfibbee.ipay.service;
+package com.codewithfibbee.ipay.service.flutterwave;
 
 import com.codewithfibbee.ipay.config.WebClientHandler;
 import com.codewithfibbee.ipay.enums.Provider;
@@ -12,6 +12,7 @@ import com.codewithfibbee.ipay.payloads.response.ListBanksResponse;
 import com.codewithfibbee.ipay.payloads.response.TransferResponse;
 import com.codewithfibbee.ipay.payloads.response.ValidateAccountResponse;
 import com.codewithfibbee.ipay.repository.TransactionHistoryRepository;
+import com.codewithfibbee.ipay.service.IPayService;
 import com.codewithfibbee.ipay.util.BaseUtil;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ import org.springframework.stereotype.Service;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
 
 import static com.codewithfibbee.ipay.constants.ApiConstants.*;
 import static com.codewithfibbee.ipay.util.BaseUtil.convertToJsonBody;
@@ -50,7 +51,7 @@ public class FlutterWaveProviderServiceImpl implements IPayService {
     }
 
     @Override
-    public Object validateBankAccount(ValidateAccountDto dto) {
+    public ValidateAccountResponse validateBankAccount(ValidateAccountDto dto) {
 
         String jsonBody = convertToJsonBody(dto);
 
@@ -60,16 +61,10 @@ public class FlutterWaveProviderServiceImpl implements IPayService {
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();
 
-        return webClientHandler.getBaseResponseCompletableFuture(request)
-                .thenApply(body -> {
-                    if(body.getData()!=null) {
-                        var res = gson.fromJson(gson.toJson(body.getData()), ValidateAccountResponse.class);
-                        res.setBank_code(dto.getBankCode());
-                        return res;
-                    } else {
-                        throw new InvalidRequestException(body.getMessage());
-                    }
-                }).join();
+        var bank = fetchBanks().stream().filter(b -> b.getCode().equals(dto.getBankCode()))
+                .findFirst().get();
+
+        return webClientHandler.processValidateAccountResponse(dto, request, bank.getName());
     }
 
     @Override
@@ -94,8 +89,20 @@ public class FlutterWaveProviderServiceImpl implements IPayService {
                     }
                 }).join();
 
-        repository.save(mapResponseToTransactionHistoryEntity(response, Provider.FlutterWave));
-        return mapResponseToTransferResponse(response);
+        repository.save(mapToTransactionHistoryEntity(response));
+        return mapToTransferResponse(response);
+    }
+
+    @Override
+    public Optional<String> getTransactionStatus(String transactionReference) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .headers(headers(FLW_AUTH))
+                .uri(URI.create(String.format("%s%s", FLW_BASE_URI, FLW_VERIFY_TRANSACTION_STATUS_URI)
+                        .concat("?tx_ref=")
+                        .concat(transactionReference)))
+                .build();
+
+        return Optional.ofNullable(webClientHandler.processFieldValue(request, "status"));
     }
 
     private FlwTransferRequest buildFlwTransferRequest(BankTransferDto dto) {
@@ -111,7 +118,7 @@ public class FlutterWaveProviderServiceImpl implements IPayService {
                 .build();
     }
 
-    private TransferResponse mapResponseToTransferResponse(FlwTransferResponse response) {
+    private TransferResponse mapToTransferResponse(FlwTransferResponse response) {
         return TransferResponse.builder()
                 .amount(response.getAmount().toString())
                 .beneficiaryAccountNumber(response.getAccount_number())
@@ -125,7 +132,7 @@ public class FlutterWaveProviderServiceImpl implements IPayService {
                 .build();
     }
 
-    private TransactionHistory mapResponseToTransactionHistoryEntity(FlwTransferResponse response, Provider provider) {
+    private TransactionHistory mapToTransactionHistoryEntity(FlwTransferResponse response) {
         return TransactionHistory.builder()
                 .amount(response.getAmount())
                 .beneficiaryAccountNumber(response.getAccount_number())
@@ -135,12 +142,12 @@ public class FlutterWaveProviderServiceImpl implements IPayService {
                 .transactionDateTime(response.getCreated_at())
                 .currencyCode(response.getCurrency())
                 .status(response.getStatus())
-                .responseMessage(Objects.equals(response.getStatus(), "success")
+                .responseMessage(response.getStatus().equalsIgnoreCase("success")
                         ? "Transfer_Successful"
-                        : Objects.equals(response.getStatus(), "failure")
+                        : response.getStatus().equalsIgnoreCase("failure")
                         ? "Transfer_Not_Successful"
-                        : response.getComplete_message())
-                .provider(provider.name())
+                        : "Pending")
+                .provider(Provider.FlutterWave.name())
                 .build();
     }
 }

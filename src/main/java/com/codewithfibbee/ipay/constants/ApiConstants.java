@@ -14,5 +14,6 @@ public class ApiConstants {
     public static final String PSTK_LIST_BANKS_URI = "/bank";
     public static final String PSTK_TRANSFER_URI = "/transfer";
     public static final String PSTK_TRANSFER_RECIPIENT_URI = "/transferrecipient";
+    public static final String PSTK_VERIFY_TRANSACTION_STATUS_URI = "/transaction/verify/";
 
 }
