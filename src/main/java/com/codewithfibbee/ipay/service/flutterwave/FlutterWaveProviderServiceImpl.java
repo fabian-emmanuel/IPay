@@ -30,12 +30,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.codewithfibbee.ipay.constants.ApiConstants.*;
 import static com.codewithfibbee.ipay.util.BaseUtil.convertToJsonBody;
-import static com.codewithfibbee.ipay.util.BaseUtil.headers;
+import static com.codewithfibbee.ipay.util.BaseUtil.getAuthHeader;
 
 @Service("FlutterWaveProvider")
 @Slf4j
 @RequiredArgsConstructor
-public class FlutterWaveProviderProviderServiceImpl implements IPayProviderService {
+public class FlutterWaveProviderServiceImpl implements IPayProviderService {
     private final WebClientHandler webClientHandler;
     private final TransactionHistoryRepository repository;
     private final Gson gson;
@@ -49,7 +49,7 @@ public class FlutterWaveProviderProviderServiceImpl implements IPayProviderServi
     public List<ListBanksResponse> fetchBanks() {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .headers(headers(FLW_AUTH))
+                .headers(getAuthHeader(FLW_AUTH))
                 .uri(URI.create(String.format("%s%s", FLW_BASE_URI, FLW_LIST_BANKS_URI)))
                 .build();
 
@@ -62,7 +62,7 @@ public class FlutterWaveProviderProviderServiceImpl implements IPayProviderServi
         String jsonBody = convertToJsonBody(dto);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .headers(headers(FLW_AUTH))
+                .headers(getAuthHeader(FLW_AUTH))
                 .uri(URI.create(String.format("%s%s", FLW_BASE_URI, FLW_VALIDATE_BANK_URI)))
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();
@@ -78,7 +78,7 @@ public class FlutterWaveProviderProviderServiceImpl implements IPayProviderServi
         String jsonBody = convertToJsonBody(transferRequest);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .headers(headers(FLW_AUTH))
+                .headers(getAuthHeader(FLW_AUTH))
                 .uri(URI.create(String.format("%s%s", FLW_BASE_URI, FLW_TRANSFER_URI)))
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();
@@ -99,7 +99,7 @@ public class FlutterWaveProviderProviderServiceImpl implements IPayProviderServi
     @Override
     public Optional<String> getTransactionStatusValue(String transactionReference) {
         HttpRequest request = HttpRequest.newBuilder()
-                .headers(headers(FLW_AUTH))
+                .headers(getAuthHeader(FLW_AUTH))
                 .uri(URI.create(String.format("%s%s", FLW_BASE_URI, FLW_VERIFY_TRANSACTION_STATUS_URI)
                         .concat("?tx_ref=")
                         .concat(transactionReference)))
@@ -118,7 +118,7 @@ public class FlutterWaveProviderProviderServiceImpl implements IPayProviderServi
         while (retryAttempt < MAX_RETRY_ATTEMPT) {
             try {
                 HttpRequest request = HttpRequest.newBuilder()
-                        .headers(headers(FLW_AUTH))
+                        .headers(getAuthHeader(FLW_AUTH))
                         .uri(URI.create(String.format("%s%s", FLW_BASE_URI, FLW_TRANSFER_URI)
                                 .concat(String.format("/%s/retries", transactionReference))))
                         .POST(HttpRequest.BodyPublishers.ofString(""))

@@ -26,3 +26,4 @@ api:
 
 flw-secret-key: ${FLW_SECRET_KEY:FLWSECK_TEST-a09998bc3cf10547962ebe85b824685c-X}
 pstk-secret-key: ${PSTK_SECRET_KEY:sk_test_f0536247d820e72d89510a34885e932559c610aa}
+ipay-auth-key: IPAY_TEST_bdhbfshbsdbfseg348746v

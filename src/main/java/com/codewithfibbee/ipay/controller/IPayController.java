@@ -1,7 +1,6 @@
 package com.codewithfibbee.ipay.controller;
 
-import com.codewithfibbee.ipay.apiresponse.ApiResponse;
-import com.codewithfibbee.ipay.config.CacheManager;
+import com.codewithfibbee.ipay.config.cache.CacheManager;
 import com.codewithfibbee.ipay.payloads.request.BankTransferDto;
 import com.codewithfibbee.ipay.payloads.request.ValidateAccountDto;
 import com.codewithfibbee.ipay.payloads.response.ListBanksResponse;
@@ -9,12 +8,9 @@ import com.codewithfibbee.ipay.payloads.response.TransferResponse;
 import com.codewithfibbee.ipay.payloads.response.ValidateAccountResponse;
 import com.codewithfibbee.ipay.service.IPayProviderService;
 import com.codewithfibbee.ipay.service.IPayTransactionStatusService;
-import com.codewithfibbee.ipay.util.ApiResponseUtil;
 import jakarta.validation.Valid;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.BooleanUtils;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,34 +30,36 @@ public class IPayController {
     CacheManager cacheManager;
 
     @GetMapping("/banks")
-    public ResponseEntity<ApiResponse<List<ListBanksResponse>>> fetchBanks(@RequestParam(required = false, defaultValue = "PayStack") String provider) {
+    public ResponseEntity<List<ListBanksResponse>> fetchBanks(@RequestParam(required = false, defaultValue = "PayStack") String provider) {
         provider = validateProvider(provider);
         List<ListBanksResponse> banks = cacheManager.getProviderBanks(provider);
         List<ListBanksResponse> response = banks.isEmpty() ? banks : iPayServiceMap.get(provider).fetchBanks();
-        return ApiResponseUtil.response(HttpStatus.OK, response, "Banks Retrieved Successfully");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/validate-bank-account")
-    public ResponseEntity<ApiResponse<ValidateAccountResponse>> validateBankAccount(@Valid @RequestBody ValidateAccountDto validateAccountDto, @RequestParam(required = false, defaultValue = "PayStack") String provider) {
+    public ResponseEntity<ValidateAccountResponse> validateBankAccount(@Valid @RequestBody ValidateAccountDto validateAccountDto,
+                                                                       @RequestParam(required = false, defaultValue = "PayStack") String provider) {
         provider = validateProvider(provider);
         String bankName = cacheManager.getBankName(validateAccountDto.getCode());
-        return ApiResponseUtil.response(HttpStatus.OK, iPayServiceMap.get(provider).validateBankAccount(validateAccountDto, bankName), "Account Validated Successfully");
+        return ResponseEntity.ok(iPayServiceMap.get(provider).validateBankAccount(validateAccountDto, bankName));
     }
 
     @PostMapping("/bank-transfer")
-    public ResponseEntity<ApiResponse<TransferResponse>> bankTransfer(@Valid @RequestBody BankTransferDto bankTransferDto, @RequestParam(required = false, defaultValue = "PayStack") String provider) {
+    public ResponseEntity<TransferResponse> bankTransfer(@Valid @RequestBody BankTransferDto bankTransferDto,
+                                                         @RequestParam(required = false, defaultValue = "PayStack") String provider) {
         provider = validateProvider(provider);
-        return ApiResponseUtil.response(HttpStatus.OK, iPayServiceMap.get(provider).transferFunds(bankTransferDto), "Funds Transfer Queued Successfully");
+        return ResponseEntity.ok(iPayServiceMap.get(provider).transferFunds(bankTransferDto));
     }
 
     @GetMapping("/transaction/{reference}")
-    public ResponseEntity<ApiResponse<TransferResponse>> transactionStatus(@PathVariable String reference) {
-        return ApiResponseUtil.response(HttpStatus.OK, iPayTransactionStatusService.getTransactionStatus(reference), "Transaction Status Retrieved Successfully");
+    public ResponseEntity<TransferResponse> transactionStatus(@PathVariable String reference) {
+        return ResponseEntity.ok(iPayTransactionStatusService.getTransactionStatus(reference));
     }
 
     @PostMapping("/retry/{reference}")
-    public ResponseEntity<ApiResponse<Object>> retryTransaction(@PathVariable String reference) {
+    public ResponseEntity<Object> retryTransaction(@PathVariable String reference) {
         iPayTransactionStatusService.doRetry(reference);
-        return ApiResponseUtil.response(HttpStatus.OK, "", "Retry Attempted");
+        return ResponseEntity.ok("");
     }
 }

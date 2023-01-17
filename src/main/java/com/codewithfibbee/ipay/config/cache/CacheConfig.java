@@ -1,4 +1,4 @@
-package com.codewithfibbee.ipay.config;
+package com.codewithfibbee.ipay.config.cache;
 
 import com.codewithfibbee.ipay.payloads.response.ListBanksResponse;
 import org.springframework.context.annotation.Bean;

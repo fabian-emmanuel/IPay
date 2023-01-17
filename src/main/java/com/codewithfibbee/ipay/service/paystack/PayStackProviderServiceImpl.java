@@ -28,12 +28,12 @@ import java.util.Optional;
 
 import static com.codewithfibbee.ipay.constants.ApiConstants.*;
 import static com.codewithfibbee.ipay.util.BaseUtil.convertToJsonBody;
-import static com.codewithfibbee.ipay.util.BaseUtil.headers;
+import static com.codewithfibbee.ipay.util.BaseUtil.getAuthHeader;
 
 @Service("PayStackProvider")
 @Slf4j
 @RequiredArgsConstructor
-public class PayStackProviderProviderServiceImpl implements IPayProviderService {
+public class PayStackProviderServiceImpl implements IPayProviderService {
     private final Gson gson;
     private final WebClientHandler webClientHandler;
     private final TransactionHistoryRepository repository;
@@ -44,7 +44,7 @@ public class PayStackProviderProviderServiceImpl implements IPayProviderService 
     public List<ListBanksResponse> fetchBanks() {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .headers(headers(PSTK_AUTH))
+                .headers(getAuthHeader(PSTK_AUTH))
                 .uri(URI.create(String.format("%s%s", PSTK_BASE_URI, PSTK_LIST_BANKS_URI)))
                 .build();
 
@@ -56,7 +56,7 @@ public class PayStackProviderProviderServiceImpl implements IPayProviderService 
     public ValidateAccountResponse validateBankAccount(ValidateAccountDto validateAccountDto, String bankName) {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .headers(headers(PSTK_AUTH))
+                .headers(getAuthHeader(PSTK_AUTH))
                 .uri(URI.create(String.format("%s%s", PSTK_BASE_URI, PSTK_VALIDATE_BANK_URI)
                         .concat("?account_number=")
                         .concat(validateAccountDto.getAccountNumber())
@@ -86,7 +86,7 @@ public class PayStackProviderProviderServiceImpl implements IPayProviderService 
         String jsonBody = convertToJsonBody(transferRequest);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .headers(headers(PSTK_AUTH))
+                .headers(getAuthHeader(PSTK_AUTH))
                 .uri(URI.create(String.format("%s%s", PSTK_BASE_URI, PSTK_TRANSFER_URI)))
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();
@@ -107,7 +107,7 @@ public class PayStackProviderProviderServiceImpl implements IPayProviderService 
     @Override
     public Optional<String> getTransactionStatusValue(String transactionReference) {
         HttpRequest request = HttpRequest.newBuilder()
-                .headers(headers(PSTK_AUTH))
+                .headers(getAuthHeader(PSTK_AUTH))
                 .uri(URI.create(String.format("%s%s", PSTK_BASE_URI, PSTK_VERIFY_TRANSACTION_STATUS_URI)
                         .concat(transactionReference)))
                 .build();
@@ -149,7 +149,7 @@ public class PayStackProviderProviderServiceImpl implements IPayProviderService 
 
         String jsonBody = convertToJsonBody(recipientRequest);
         HttpRequest request = HttpRequest.newBuilder()
-                .headers(headers(PSTK_AUTH))
+                .headers(getAuthHeader(PSTK_AUTH))
                 .uri(URI.create(String.format("%s%s", PSTK_BASE_URI, PSTK_TRANSFER_RECIPIENT_URI)))
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();

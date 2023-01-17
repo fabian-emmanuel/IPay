@@ -11,8 +11,12 @@ import java.util.Optional;
 
 public interface IPayProviderService {
     List<ListBanksResponse> fetchBanks();
+
     ValidateAccountResponse validateBankAccount(ValidateAccountDto validateAccountDto, String bankName);
+
     TransferResponse transferFunds(BankTransferDto bankTransferDto);
+
     Optional<String> getTransactionStatusValue(String transactionReference);
+
     void doRetry(String transactionReference);
 }
