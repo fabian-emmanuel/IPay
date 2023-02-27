@@ -57,7 +57,7 @@ public class WebClientHandler {
     public CompletableFuture<BaseResponse> getBaseResponseCompletableFuture(HttpRequest request) {
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(HttpResponse::body)
-                .thenApply(WebClientHandler::mapToBaseResponse);
+                .thenApply(WebClientHandler::mapTo2BaseResponse);
     }
 
     private static BaseResponse mapToBaseResponse(String x) {

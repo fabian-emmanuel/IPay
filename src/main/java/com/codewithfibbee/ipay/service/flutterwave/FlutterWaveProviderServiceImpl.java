@@ -13,6 +13,7 @@ import com.codewithfibbee.ipay.payloads.response.TransferResponse;
 import com.codewithfibbee.ipay.payloads.response.ValidateAccountResponse;
 import com.codewithfibbee.ipay.repository.TransactionHistoryRepository;
 import com.codewithfibbee.ipay.service.IPayProviderService;
+import com.codewithfibbee.ipay.service.queue.QueueService;
 import com.codewithfibbee.ipay.util.BaseUtil;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,7 @@ public class FlutterWaveProviderServiceImpl implements IPayProviderService {
     private static final int MAX_RETRY_ATTEMPT = 3; // Maximum number of retry attempts
     private static final int INITIAL_DELAY = 100; // Initial delay in milliseconds
     private static final int MULTIPLIER = 2; // Back-off multiplier
+    private final QueueService queueService;
 
     @Override
     public List<ListBanksResponse> fetchBanks() {
@@ -93,6 +95,7 @@ public class FlutterWaveProviderServiceImpl implements IPayProviderService {
                 }).join();
 
         repository.save(mapToTransactionHistoryEntity(response));
+        queueService.enqueueTransaction(dto);
         return mapToTransferResponse(response);
     }
 

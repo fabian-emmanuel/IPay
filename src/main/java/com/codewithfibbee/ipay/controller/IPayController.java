@@ -7,7 +7,7 @@ import com.codewithfibbee.ipay.payloads.response.ListBanksResponse;
 import com.codewithfibbee.ipay.payloads.response.TransferResponse;
 import com.codewithfibbee.ipay.payloads.response.ValidateAccountResponse;
 import com.codewithfibbee.ipay.service.IPayProviderService;
-import com.codewithfibbee.ipay.service.IPayTransactionStatusService;
+import com.codewithfibbee.ipay.service.transaction.IPayTransactionStatusService;
 import jakarta.validation.Valid;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;

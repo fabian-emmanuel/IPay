@@ -1,4 +1,4 @@
-package com.codewithfibbee.ipay.service;
+package com.codewithfibbee.ipay.service.transaction;
 
 import com.codewithfibbee.ipay.payloads.response.TransferResponse;
 

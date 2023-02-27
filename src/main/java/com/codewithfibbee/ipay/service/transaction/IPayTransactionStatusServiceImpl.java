@@ -1,9 +1,10 @@
-package com.codewithfibbee.ipay.service;
+package com.codewithfibbee.ipay.service.transaction;
 
 import com.codewithfibbee.ipay.exceptions.ResourceNotFoundException;
 import com.codewithfibbee.ipay.model.TransactionHistory;
 import com.codewithfibbee.ipay.payloads.response.TransferResponse;
 import com.codewithfibbee.ipay.repository.TransactionHistoryRepository;
+import com.codewithfibbee.ipay.service.IPayProviderService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
